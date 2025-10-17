@@ -1,0 +1,70 @@
+import logging
+import socketio
+import logging
+import asyncio
+import polars as pl
+from datetime import datetime
+import pytz
+
+
+logger = logging.getLogger(__name__)
+
+async def get_weather_station_data(config) -> dict:
+    config = config['ambient_weather']
+    global event_received
+    event_received = False
+
+    url = config['uri']+config['app_key']
+    sio =  socketio.AsyncClient()
+    
+    @sio.event
+    async def connect():
+        await sio.emit("subscribe", {"apiKeys": [config["api_key"]]})
+        print("Connected to Ambient Weather API")
+
+    @sio.event
+    async def disconnect():
+        print("Disconnected from Ambient Weather API")
+
+    @sio.event
+    async def data(data):
+        global event_received
+        event_received = True
+        print(f'type = {type(data)}\n{data}')
+        # Set the data to be returned
+        sio.data = data
+
+    await sio.connect(url, transports=["websocket"])
+    while not event_received:
+        await sio.sleep(1)
+    await sio.disconnect()
+    sio.data['source'] = "https://ambientweather.net"
+    return sio.data
+
+def transform_data_facts(ambient_data: dict, location_id: int) -> pl.DataFrame:
+    '''
+        Transform the data into a format that can be used to create the fact_weather table.
+    '''
+    if ambient_data is None:
+        raise ValueError("Data is required")
+    try:
+        # Extract the relevant data from the JSON response
+        df = pl.DataFrame({
+            'date': datetime.fromisoformat(ambient_data['date']),
+            'source': ambient_data['source'],
+            'location_id': location_id,
+            'temperature': ambient_data['tempf'],
+            'pressure': ambient_data['baromrelin'],
+            'humidity': ambient_data['humidity'],
+            'wind_direction': ambient_data['winddir'],
+            'wind_speed': ambient_data['windspdmph_avg10m'],
+            'wind_gust': ambient_data['windgustmph'],
+            'daily_precipitation': ambient_data['dailyrainin']
+        })
+        return df
+    except Exception as e:
+        raise ValueError(f"Error transforming data: {e}")
+    
+if __name__ == '__main__':
+    print(transform_data_facts())
+    pass
