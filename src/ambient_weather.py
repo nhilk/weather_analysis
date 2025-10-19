@@ -4,8 +4,8 @@ import logging
 import asyncio
 import polars as pl
 from datetime import datetime
-import pytz
-
+import toml
+from db import DB
 
 logger = logging.getLogger(__name__)
 
@@ -66,5 +66,13 @@ def transform_data_facts(ambient_data: dict, location_id: int) -> pl.DataFrame:
         raise ValueError(f"Error transforming data: {e}")
     
 if __name__ == '__main__':
-    print(transform_data_facts())
-    pass
+    logging.basicConfig(filename="log/weather_analysis.log", level=logging.INFO,)
+    try:
+        config = toml.load('config/config.toml')
+        db = DB(config = config)
+        conn = db.engine.connect()
+        data = transform_data_facts(asyncio.run(get_weather_station_data(config)),1)
+        data.write_database('fact_weather',conn,if_table_exists='append')
+        logger.info("Data written to database")
+    except Exception as e:
+        logger.error(f'Error writing to database or getting data from api: {e}')
