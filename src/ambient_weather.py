@@ -9,7 +9,7 @@ from db import DB
 
 logger = logging.getLogger(__name__)
 
-async def get_weather_station_data(config) -> dict:
+async def get_weather_station_data(config, db_conn, location_id:int, events:int) -> dict:
     config = config['ambient_weather']
     global event_received
     event_received = False
@@ -20,32 +20,40 @@ async def get_weather_station_data(config) -> dict:
     @sio.event
     async def connect():
         await sio.emit("subscribe", {"apiKeys": [config["api_key"]]})
-        print("Connected to Ambient Weather API")
-
+        logger.info("Connected to Ambient Weather API")
+    @sio.event
+    async def connect_error(data):
+        logger.info(f"Connection failed: {data}")
     @sio.event
     async def disconnect():
-        print("Disconnected from Ambient Weather API")
+        logger.info("Disconnected from Ambient Weather API")
 
     @sio.event
     async def data(data):
         global event_received
         event_received = True
-        print(f'type = {type(data)}\n{data}')
         # Set the data to be returned
         sio.data = data
+        sio.data['source'] = "https://ambientweather.net"
+        df = transform_data_facts(data ,location_id=location_id)
+        df.write_database(config['db_table_name'],db_conn,if_table_exists='append')
+        logger.info(f'Data writen to database:{df.head}')
 
     await sio.connect(url, transports=["websocket"])
-    while not event_received:
-        await sio.sleep(1)
-    await sio.disconnect()
-    sio.data['source'] = "https://ambientweather.net"
-    return sio.data
+    for i in range(events):
+        event_received = False
+        while not event_received:
+            logger.info(f"Sleeping {event_received}")
+            await sio.sleep(60)
+    logger.info("Disconnecting")
+    await sio.disconnect()      
 
 def transform_data_facts(ambient_data: dict, location_id: int) -> pl.DataFrame:
     '''
         Transform the data into a format that can be used to create the fact_weather table.
     '''
     if ambient_data is None:
+        logger.info("No ambient data to insert")
         raise ValueError("Data is required")
     try:
         # Extract the relevant data from the JSON response
@@ -63,7 +71,8 @@ def transform_data_facts(ambient_data: dict, location_id: int) -> pl.DataFrame:
         })
         return df
     except Exception as e:
-        raise ValueError(f"Error transforming data: {e}")
+        logger.error(f"Error transforming data: {e}")
+        raise ValueError(f'Error transforming data: {e}')
     
 if __name__ == '__main__':
     logging.basicConfig(filename="log/weather_analysis.log", level=logging.INFO,)
@@ -71,8 +80,6 @@ if __name__ == '__main__':
         config = toml.load('config/config.toml')
         db = DB(config = config)
         conn = db.engine.connect()
-        data = transform_data_facts(asyncio.run(get_weather_station_data(config)),1)
-        data.write_database('fact_weather',conn,if_table_exists='append')
-        logger.info("Data written to database")
+        asyncio.run(get_weather_station_data(config,conn, 1, 1))
     except Exception as e:
         logger.error(f'Error writing to database or getting data from api: {e}')
