@@ -1,0 +1,54 @@
+FROM python:3.12-slim-bookworm
+
+ARG weather_analysis_env
+
+ENV weather_analysis_env=${weather_analysis_env} \
+  PYTHONFAULTHANDLER=1 \
+  PYTHONUNBUFFERED=1 \
+  PYTHONHASHSEED=random \
+  PIP_NO_CACHE_DIR=off \
+  PIP_DISABLE_PIP_VERSION_CHECK=on \
+  PIP_DEFAULT_TIMEOUT=100 \
+  # Poetry's configuration:
+  POETRY_NO_INTERACTION=1 \
+  POETRY_VIRTUALENVS_CREATE=false \
+  POETRY_CACHE_DIR='/var/cache/pypoetry' \
+  POETRY_HOME='/usr/local' \
+  POETRY_VERSION='2.2.1' \
+  PATH="$POETRY_HOME/bin:$PATH"
+
+
+# System deps:
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    build-essential \
+    gcc \
+    libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry (uses POETRY_HOME from ENV above)
+RUN curl -sSL https://install.python-poetry.org | python3 - \
+  && if [ -x "$POETRY_HOME/bin/poetry" ]; then \
+       echo "Poetry installed at $POETRY_HOME/bin/poetry"; \
+       $POETRY_HOME/bin/poetry --version; \
+       ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry || true; \
+     else \
+       echo "Poetry install failed: $POETRY_HOME/bin/poetry not found" >&2; \
+       exit 1; \
+     fi
+
+# Copy only pyproject and poetry.lock first to cache dependency installation
+WORKDIR /weather_analysis
+
+COPY . /weather_analysis/
+
+# Project initialization: install dependencies before copying source
+RUN poetry install --no-interaction --no-ansi
+
+# Copy project source
+COPY . /weather_analysis/
+
+WORKDIR /weather_analysis/src
+CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info"]

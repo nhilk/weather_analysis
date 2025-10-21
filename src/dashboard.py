@@ -1,8 +1,9 @@
-from dash import Dash, html, dcc, callback, Input, Output
+from dash import Dash, html, dcc, callback, Input, Output, CeleryManager
 from sqlalchemy import text
 import plotly.express as px
 import polars as ps
 from db import DB
+from celery_app import celery_app
 import toml
 
 config = toml.load('config/config.toml')
@@ -10,9 +11,10 @@ db = DB(config = config)
 conn = db.engine.connect()
 queries = toml.load('src/queries.toml')
 query_keys = list(queries.keys())
+manager = CeleryManager(celery_app)
 
 
-app = Dash()
+app = Dash(__name__,background_callback_manager=manager)
 
 selectable = text(queries['all_weather']['query'])
 df = ps.read_database(query=selectable,connection=conn)
@@ -37,4 +39,4 @@ def update_graph(graph_to_display):
     return fig
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8050,debug=True)

@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:14-alpine
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - /home/hilkshake/apps/postgres:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    secrets:
+      - postgres_password
+      - postgres_user
+    environment:
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_USER_FILE=/run/secrets/postgres_user
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - /home/hilkshake/apps/redis:/var/lib/redis/data
+      - /home/hilkshake/apps/redis:/var/lib/redis/data
+  dashboard:
+    build:
+      context: .
+      dockerfile: dockerfile.dash
+    ports:
+      - "8050:8050"
+    volumes:
+      - .:/weather_analysis
+    environment:
+      - DATABASE_URL=/run/secrets/postgres_url
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - postgres
+      - redis
+  celery:
+    build:
+      context: .
+      dockerfile: dockerfile.celery
+    volumes:
+      - .:/weather_analysis
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
+  postgres_user:
+    file: ./secrets/postgres_user
+  postgres_url:
+    file: ./secrets/postgres_url

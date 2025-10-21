@@ -10,14 +10,7 @@ class DB:
             logging.basicConfig(filename="log/weather_analysis.log", level=logging.INFO)
             self.logger.info("Connecting to database")
             self.config = config
-            url = URL.create(
-                config['database']['type'],
-                username = config['database']['username'],
-                password = config['database']['password'],
-                host = config['database']['host'],
-                database = config['database']['database']
-            )
-            self.engine = create_engine(url)
+            self.engine = create_engine(config['database']['url'])
             self.logger.info("Engine created")
         except Exception as e:
-            self.logger.info("Engine creation failed")
+            self.logger.error(f"Engine creation failed: {e}")
