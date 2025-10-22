@@ -36,6 +36,7 @@ async def get_weather_station_data(config, db_conn, location_id:int, events:int)
         sio.data = data
         sio.data['source'] = "https://ambientweather.net"
         df = transform_data_facts(data ,location_id=location_id)
+        print(df.head)
         df.write_database(config['db_table_name'],db_conn,if_table_exists='append')
         logger.info(f'Data writen to database:{df.head}')
 
@@ -73,17 +74,23 @@ def transform_data_facts(ambient_data: dict, location_id: int) -> pl.DataFrame:
     except Exception as e:
         logger.error(f"Error transforming data: {e}")
         raise ValueError(f'Error transforming data: {e}')
-    
-def run_weather_download(config):
+
+def run_weather_download(num_reads: int, location_id: int = 1):
+    import toml, os
+    config = toml.load('/weather_analysis/config/config.toml')
     db = DB(config)
-    conn =db.engine.connect()
-    asyncio.run(get_weather_station_data(config, conn, 1, 10))
+    with db.engine.connect() as conn:
+        asyncio.run(get_weather_station_data(config, conn, location_id, num_reads))
+    print('complete')
+    return "Complete"
 
 if __name__ == '__main__':
     logging.basicConfig(filename="log/weather_analysis.log", level=logging.INFO,)
     try:
         config = toml.load('config/config.toml')
-        logger.info("Starting new download")
-        run_weather_download(config)
+        db = DB(config, url='url_test')
+        conn = db.engine.connect()
+        asyncio.run(get_weather_station_data(config, conn, 1, 1))
+        print('complete')
     except Exception as e:
         logger.error(f'Error writing to database or getting data from api: {e}')

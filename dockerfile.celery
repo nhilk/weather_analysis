@@ -50,5 +50,4 @@ RUN poetry install --no-interaction --no-ansi
 # Copy project source
 COPY . /weather_analysis/
 
-WORKDIR /weather_analysis/src
-CMD ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
+CMD ["celery", "-A", "src.celery_app", "worker", "-P", "solo", "--pool=solo", "--concurrency=1", "--loglevel=info"]
