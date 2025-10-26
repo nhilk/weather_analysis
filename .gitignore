@@ -3,3 +3,4 @@
 /src/connection.py
 __pycache__/
 secrets/
+celerybeat-schedule

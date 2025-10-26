@@ -84,13 +84,13 @@ def run_weather_download(num_reads: int, location_id: int = 1):
     print('complete')
     return "Complete"
 
-if __name__ == '__main__':
-    logging.basicConfig(filename="log/weather_analysis.log", level=logging.INFO,)
-    try:
-        config = toml.load('config/config.toml')
-        db = DB(config, url='url_test')
-        conn = db.engine.connect()
-        asyncio.run(get_weather_station_data(config, conn, 1, 1))
-        print('complete')
-    except Exception as e:
-        logger.error(f'Error writing to database or getting data from api: {e}')
+# if __name__ == '__main__':
+#     logging.basicConfig(filename="log/weather_analysis.log", level=logging.INFO,)
+#     try:
+#         config = toml.load('config/config.toml')
+#         db = DB(config, url='url_test')
+#         conn = db.engine.connect()
+#         asyncio.run(get_weather_station_data(config, conn, 1, 1))
+#         print('complete')
+#     except Exception as e:
+#         logger.error(f'Error writing to database or getting data from api: {e}')
