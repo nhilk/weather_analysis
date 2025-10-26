@@ -47,7 +47,13 @@ def update_graph(graph_to_display):
     selectable = text(query['query'])
     with db.engine.connect() as conn:
         df = ps.read_database(query=selectable,connection=conn)
-    fig = px.line(df,x=query['columns']['x'], y=query['columns']['y'])
+    match query['graph_type']:
+        case 'line':
+            fig = px.line(df,x=query['columns']['x'], y=query['columns']['y'])
+        case 'scatter':
+            fig = px.scatter(df, x=query['columns']['x'], y=query['columns']['y'])
+        case _:
+            fig = px.line(df,x=query['columns']['x'], y=query['columns']['y'])
     return fig
 
 @callback(

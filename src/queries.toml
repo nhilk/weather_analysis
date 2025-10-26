@@ -1,9 +1,9 @@
 [all_weather]
 query = 'SELECT date, temperature FROM fact_weather'
 columns = {x='date', y='temperature'}
-graph_type = 'line'
+graph_type = 'scatter'
 
 [daily_highs]
-query = "SELECT DATE_TRUNC('day',date) AS \"day\", MAX(temperature) AS \"Daily high temp recorded\" FROM fact_weather GROUP BY day"
+query = "SELECT DATE_TRUNC('day',date) AS \"day\", MAX(temperature) AS \"Daily high temp recorded\" FROM fact_weather GROUP BY day ORDER BY day DESC"
 columns = {x='day', y='Daily high temp recorded'}
 graph_type = 'line'
