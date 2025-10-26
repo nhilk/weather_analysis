@@ -7,3 +7,6 @@ graph_type = 'scatter'
 query = "SELECT DATE_TRUNC('day',date) AS \"day\", MAX(temperature) AS \"Daily high temp recorded\" FROM fact_weather GROUP BY day ORDER BY day DESC"
 columns = {x='day', y='Daily high temp recorded'}
 graph_type = 'line'
+
+[latest_weather]
+query = "SELECT date, temperature, pressure, wind_speed, wind_direction FROM fact_weather ORDER BY date DESC LIMIT 1"

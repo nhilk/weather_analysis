@@ -33,8 +33,8 @@ celery_app.conf.update(
 # Define the task at module level so workers can execute it without any Beat-only hooks
 @celery_app.task(
     name="weather.run_weather_download",
-    ignore_result=True,  # don't store results for periodic task runs
-    store_errors_even_if_ignored=False,  # also avoid persisting errors for this task
+    ignore_result=True,
+    store_errors_even_if_ignored=False,
 )
 def run_weather_download_task(num_reads: int = 1, location_id: int = 1):
     import src.ambient_weather as ambient_weather
