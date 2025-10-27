@@ -36,15 +36,15 @@ async def get_weather_station_data(config, db_conn, location_id:int, events:int)
         sio.data = data
         sio.data['source'] = "https://ambientweather.net"
         df = transform_data_facts(data ,location_id=location_id)
-        print(df.head)
+        print(df.head())
         df.write_database(config['db_table_name'],db_conn,if_table_exists='append')
-        logger.info(f'Data writen to database:{df.head}')
+        logger.info(f'Data written to database:{df.head()}')
 
     await sio.connect(url, transports=["websocket"])
     for i in range(events):
         event_received = False
         while not event_received:
-            logger.info(f"Sleeping {event_received}")
+            logger.info(f"Sleeping for 5 seconds, iteration {i+1}/{events}")
             await sio.sleep(5)
     logger.info("Disconnecting")
     await sio.disconnect()      

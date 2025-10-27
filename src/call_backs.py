@@ -2,23 +2,27 @@ from dash import Input, Output
 from dash.exceptions import PreventUpdate
 import toml
 import sys, os
+import logging
 import polars as ps
 from sqlalchemy import text
 import plotly.express as px
 import ambient_weather
 
-
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="log/weather_analysis.log", level=logging.INFO,)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from db import DB
 from celery_app import run_weather_download_task
 
 # Top-level function to enqueue the Celery task wrapper and return immediately
-def do_ambient_download(n_clicks):
+def do_ambient_download(n_clicks,value:int = 1 ):
     if not n_clicks:
         return None
-    # Enqueue the periodic/task wrapper directly; worker will execute it
-    run_weather_download_task.delay(1, 1)
-    #ambient_weather.run_weather_download(1,1)
+    try:
+        value = int(value)
+        run_weather_download_task.delay(value, 1)
+    except ValueError as e:
+        logger.error(f'Unable to parse value given by user {e}')
     return {"status": "queued"}
 
 def register_callbacks(app):
@@ -66,4 +70,5 @@ def register_callbacks(app):
     app.callback(
         Output('ambient_job_triggered', 'data'),
         Input('trigger_api', 'n_clicks'),
+        Input('api_input', 'value')
     )(do_ambient_download)

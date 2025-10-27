@@ -45,6 +45,6 @@ celery_app.conf.beat_schedule = {
     "ambient-weather-download-every-3h": {
         "task": "weather.run_weather_download",
         "schedule": crontab(minute="2", hour="*/3"),
-        "args": (1, 1),
+        "args": (3, 1),
     }
 }

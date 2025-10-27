@@ -26,7 +26,8 @@ def create_app():
 
     app.layout = html.Div(children=[
         html.H1(children='Temperature'),
-        dbc.Row([html.Button('Trigger API', id='trigger_api',n_clicks=0),
+        dbc.Row([dcc.Input(id='api_input'.format('number')),
+                html.Button('Trigger API', id='trigger_api',n_clicks=0),
                 html.Button('Refresh Latest Weather', id='get_latest_weather',n_clicks=0)]),
         dcc.Store(id='ambient_job_triggered'),
         

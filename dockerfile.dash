@@ -49,4 +49,4 @@ RUN poetry install --no-interaction --no-ansi
 
 EXPOSE 8050
 
-CMD ["poetry", "run", "python","src/dashboard.py"]
+CMD ["gunicorn", "-b", "0.0.0.0:8050", "src.wsgi:server", "--workers", "2", "--threads", "2", "--timeout", "120"]
