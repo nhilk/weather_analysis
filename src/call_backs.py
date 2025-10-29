@@ -25,16 +25,14 @@ def do_ambient_download(n_clicks,value:int = 1 ):
         logger.error(f'Unable to parse value given by user {e}')
     return {"status": "queued"}
 
-def register_callbacks(app):
+def register_callbacks(app, db):
     @app.callback(
         Output('display_graph','figure'),
         Input('graph_to_display', 'value')
     )
     def update_graph(graph_to_display):
-        config = toml.load('config/config.toml')
         queries = toml.load('src/queries.toml')
         query = queries[graph_to_display]
-        db = DB(config = config)
         selectable = text(query['query'])
         with db.engine.connect() as conn:
             df = ps.read_database(query=selectable,connection=conn)
@@ -54,8 +52,6 @@ def register_callbacks(app):
     def get_latest_weather(n_clicks):
         if not n_clicks:
             raise PreventUpdate
-        config = toml.load('config/config.toml')
-        db = DB(config = config)
         queries = toml.load('src/queries.toml')
         sql = queries['latest_weather']['query']
         selectable = text(sql)

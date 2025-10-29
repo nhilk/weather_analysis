@@ -35,7 +35,7 @@ def create_app():
         dash_table.DataTable(id='latest_weather',style_header={'fontWeight':'bold'}),
         dcc.Graph(id='display_graph')
     ])
-    register_callbacks(app)
+    register_callbacks(app, db)
     return app
 
 if __name__ == '__main__':
